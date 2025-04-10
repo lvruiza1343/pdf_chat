@@ -9,16 +9,14 @@ from langchain.llms import OpenAI
 from langchain.chains.question_answering import load_qa_chain
 import platform
 
-# Estilos personalizados con fondo y componentes llamativos
+# Estilos CSS personalizados
 st.markdown("""
     <style>
-    /* Fondo de la app */
     .stApp {
         background-color: #1f1f2e;
         color: #f5f5f5;
     }
 
-    /* Título animado */
     .animated-title {
         color: yellow;
         font-size: 40px;
@@ -34,120 +32,114 @@ st.markdown("""
         100% { transform: translateX(15px); }
     }
 
-    /* Campos de entrada */
-    .stTextInput > div > div > input,
-    .stTextArea > div > textarea {
-        background-color: #2c2c3c;
-        color: #f5f5f5;
-        border: 1px solid #f5f5f5;
-        border-radius: 10px;
-        padding: 10px;
-    }
-
-    /* Botones */
-    .stButton > button {
-        background-color: #ffcc00;
-        color: black;
-        font-weight: bold;
-        border-radius: 10px;
-        padding: 10px 20px;
-        border: none;
-    }
-
-    .stButton > button:hover {
-        background-color: #ffaa00;
-        color: white;
-    }
-
-    /* Cuadro de respuesta */
     .respuesta-box {
         background-color: #333;
         padding: 20px;
         border-radius: 10px;
         border: 1px solid #ffcc00;
         margin-top: 10px;
+        scroll-margin-top: 80px;
+    }
+
+    .scroll-button {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background-color: #ffcc00;
+        color: black;
+        padding: 12px 18px;
+        border-radius: 50px;
+        font-weight: bold;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        z-index: 9999;
+    }
+
+    .scroll-button:hover {
+        background-color: #ffaa00;
+        color: white;
     }
 
     </style>
 """, unsafe_allow_html=True)
 
-# Título llamativo
+# Título animado
 st.markdown('<div class="animated-title">Generación Aumentada por Recuperación (RAG) 💬</div>', unsafe_allow_html=True)
 
 # Mostrar versión de Python
 st.write("🧠 Versión de Python:", platform.python_version())
 
-# Cargar y mostrar imagen
+# Mostrar imagen
 try:
     image = Image.open('Chat_pdf.png')
     st.image(image, width=350)
 except Exception as e:
     st.warning(f"⚠️ No se pudo cargar la imagen: {e}")
 
-# Información en la barra lateral
+# Barra lateral
 with st.sidebar:
     st.subheader("📄 Este Agente te ayudará a realizar análisis sobre el PDF cargado")
 
-# Ingreso de clave API
+# Clave OpenAI
 ke = st.text_input('🔐 Ingresa tu Clave de OpenAI', type="password")
 if ke:
     os.environ['OPENAI_API_KEY'] = ke
 else:
     st.warning("🔑 Por favor ingresa tu clave de API de OpenAI para continuar")
 
-# Subida de archivo PDF
+# Subida PDF
 pdf = st.file_uploader("📁 Carga el archivo PDF", type="pdf")
 
-# Procesamiento del PDF si está cargado
-if pdf is not None and ke:
-    try:
-        # Extraer texto del PDF
-        pdf_reader = PdfReader(pdf)
-        text = ""
-        for page in pdf_reader.pages:
-            text += page.extract_text()
-        
-        st.info(f"📃 Texto extraído: {len(text)} caracteres")
-        
-        # Dividir texto en fragmentos
-        text_splitter = CharacterTextSplitter(
-            separator="\n",
-            chunk_size=500,
-            chunk_overlap=20,
-            length_function=len
-        )
-        chunks = text_splitter.split_text(text)
-        st.success(f"✅ Documento dividido en {len(chunks)} fragmentos")
-        
-        # Crear embeddings y base de conocimiento
-        embeddings = OpenAIEmbeddings()
-        knowledge_base = FAISS.from_texts(chunks, embeddings)
-        
-        # Pregunta del usuario
-        st.subheader("❓ Escribe qué quieres saber sobre el documento")
-        user_question = st.text_area("💬", placeholder="Escribe tu pregunta aquí...")
+# Área para mostrar respuesta
+respuesta_container = st.empty()
 
-        # Procesar pregunta
-        if user_question:
-            docs = knowledge_base.similarity_search(user_question)
-            
-            # Modelo de lenguaje
-            llm = OpenAI(temperature=0, model_name="gpt-4o")
-            
-            # Cadena de preguntas y respuestas
-            chain = load_qa_chain(llm, chain_type="stuff")
-            
-            # Ejecutar la cadena
-            response = chain.run(input_documents=docs, question=user_question)
-            
-            # Mostrar respuesta con caja bonita
-            st.markdown("### 🔎 Respuesta:")
-            st.markdown(f'<div class="respuesta-box">{response}</div>', unsafe_allow_html=True)
-                
-    except Exception as e:
-        st.error(f"❌ Error al procesar el PDF: {str(e)}")
-        import traceback
-        st.error(traceback.format_exc())
+# Animación + procesamiento
+if pdf is not None and ke:
+    with st.spinner("📚 Cargando y analizando el PDF..."):
+        try:
+            pdf_reader = PdfReader(pdf)
+            text = "".join([page.extract_text() for page in pdf_reader.pages])
+            st.info(f"📃 Texto extraído: {len(text)} caracteres")
+
+            text_splitter = CharacterTextSplitter(
+                separator="\n", chunk_size=500, chunk_overlap=20, length_function=len
+            )
+            chunks = text_splitter.split_text(text)
+            st.success(f"✅ Documento dividido en {len(chunks)} fragmentos")
+
+            embeddings = OpenAIEmbeddings()
+            knowledge_base = FAISS.from_texts(chunks, embeddings)
+
+            st.subheader("❓ Escribe qué quieres saber sobre el documento")
+            user_question = st.text_area("💬", placeholder="Escribe tu pregunta aquí...")
+
+            if user_question:
+                docs = knowledge_base.similarity_search(user_question)
+                llm = OpenAI(temperature=0, model_name="gpt-4o")
+                chain = load_qa_chain(llm, chain_type="stuff")
+
+                response = chain.run(input_documents=docs, question=user_question)
+
+                # Ancla HTML para el scroll
+                st.markdown('<div id="respuesta"></div>', unsafe_allow_html=True)
+                respuesta_container.markdown("### 🔎 Respuesta:")
+                respuesta_container.markdown(
+                    f'<div class="respuesta-box">{response}</div>', unsafe_allow_html=True
+                )
+
+                # Botón flotante para hacer scroll a la respuesta
+                st.markdown("""
+                    <a href="#respuesta">
+                        <button class="scroll-button">⬇ Ver respuesta</button>
+                    </a>
+                """, unsafe_allow_html=True)
+
+        except Exception as e:
+            st.error(f"❌ Error al procesar el PDF: {str(e)}")
+            import traceback
+            st.error(traceback.format_exc())
+
 elif pdf is not None and not ke:
     st.warning("🔐 Por favor ingresa tu clave de API de OpenAI para continuar")
 else:
