@@ -28,6 +28,32 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+st.markdown("""
+    <style>
+    body {
+        background-color: #fdf6e3;
+    }
+    .stApp {
+        background-color: #1f1f2e;
+    }
+
+    .animated-title {
+        color: yellow;
+        font-size: 36px;
+        font-weight: bold;
+        animation: moveText 3s infinite alternate;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    @keyframes moveText {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(10px); }
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+
 # Título con animación y color amarillo
 st.markdown('<div class="animated-title">Generación Aumentada por Recuperación (RAG) 💬</div>', unsafe_allow_html=True)
 
