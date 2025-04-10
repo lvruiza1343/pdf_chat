@@ -13,7 +13,7 @@ import platform
 st.markdown("""
     <style>
     .animated-title {
-        color: yellow;
+        color: green;
         font-size: 36px;
         font-weight: bold;
         animation: moveText 3s infinite alternate;
@@ -31,7 +31,7 @@ st.markdown("""
 st.markdown("""
     <style>
     body {
-        background-color: #fdf6e3;
+        background-color: #1f1f2e
     }
     .stApp {
         background-color: #1f1f2e;
