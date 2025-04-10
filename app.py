@@ -72,7 +72,7 @@ st.write("🧠 Versión de Python:", platform.python_version())
 # Imagen decorativa
 try:
     image = Image.open('piton.jpg')
-    st.image(image, width=680)
+    st.image(image, width=700)
 except Exception as e:
     st.warning(f"⚠️ No se pudo cargar la imagen: {e}")
 
